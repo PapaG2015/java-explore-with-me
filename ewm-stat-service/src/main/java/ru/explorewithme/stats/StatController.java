@@ -6,9 +6,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.explorewithme.stats.model.GetStatRequest;
+import ru.explorewithme.stats.model.ViewStats;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping(path = "/stats")
@@ -24,8 +27,8 @@ public class StatController {
     public List<ViewStats> getStat(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
-            @RequestParam List<String> uris,
-            @RequestParam(defaultValue = "false") Boolean unique) {
+            @RequestParam(required = false) Set<String> uris,
+            @RequestParam(required = false, defaultValue = "false") Boolean unique) {
 
         return statService.getStat(GetStatRequest.of(start, end, uris, unique));
     }

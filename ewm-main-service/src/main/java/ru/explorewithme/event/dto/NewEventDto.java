@@ -22,7 +22,7 @@ public class NewEventDto {
     @Builder.Default
     private Boolean paid = false;
     @Builder.Default
-    private Integer participantLimit = 0;
+    private Long participantLimit = 0L;
     @Builder.Default
     private Boolean requestModeration = true;
     @Length(min = 3, max = 120)

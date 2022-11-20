@@ -55,7 +55,10 @@ public class CategoryService {
         Pageable pageable = PageRequest.of(from / size, size);
         Page<Category> categories = categoryRepository.findAll(pageable);
 
-        return categories.stream().map(CategoryMapper::toCategoryDto).collect(Collectors.toList());
+        List<CategoryDto> categoryDtos =
+                categories.stream().map(CategoryMapper::toCategoryDto).collect(Collectors.toList());
+        log.info("Getted from={}, size={} categories:", from, size, categoryDtos);
+        return  categoryDtos;
     }
 
     public CategoryDto getCategory(Long catId) {

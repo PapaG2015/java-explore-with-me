@@ -2,6 +2,7 @@ package ru.explorewithme.hit;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.explorewithme.hit.model.EndPointHit;
 
 @RestController
 @RequestMapping(path = "/hit")

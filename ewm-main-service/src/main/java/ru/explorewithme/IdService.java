@@ -2,16 +2,16 @@ package ru.explorewithme;
 
 import org.springframework.stereotype.Service;
 import ru.explorewithme.category.CategoryRepository;
-import ru.explorewithme.admin.compilations.CompilationRepository;
+import ru.explorewithme.compilation.CompilationRepository;
 import ru.explorewithme.category.model.Category;
-import ru.explorewithme.admin.model.Compilation;
+import ru.explorewithme.compilation.model.Compilation;
 import ru.explorewithme.user.model.User;
 import ru.explorewithme.user.UserRepository;
 import ru.explorewithme.exception.IdException;
 import ru.explorewithme.event.EventRepository;
 import ru.explorewithme.event.model.Event;
-import ru.explorewithme.users.model.Request;
-import ru.explorewithme.users.requests.RequestRepository;
+import ru.explorewithme.request.model.Request;
+import ru.explorewithme.request.RequestRepository;
 
 @Service
 public class IdService {

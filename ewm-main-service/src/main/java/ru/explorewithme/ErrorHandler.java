@@ -3,8 +3,8 @@ package ru.explorewithme;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.util.PSQLException;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.beanvalidation.MethodValidationInterceptor;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,6 +46,20 @@ public class ErrorHandler {
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();
     }
+
+    //400
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleIllegalArgumentException(IllegalArgumentException e) {
+        return ApiError.builder()
+                .errors(Arrays.asList(e.getStackTrace()))
+                .message(e.getMessage())
+                .reason(e.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
+                .timestamp(LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .build();
+    }
     /*
     ////403
     //404
@@ -76,16 +90,31 @@ public class ErrorHandler {
                 .build();
     }
 
-    //500
+    //404
     @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleIdException(IdException e) {
+    public ApiError handleIdException404(IdException e) {
         log.error(e.getMessage());
         return ApiError.builder()
                 .errors(Arrays.asList(e.getStackTrace()))
                 .message(e.getMessage())
                 .reason(e.getMessage())
                 .status(HttpStatus.NOT_FOUND)
+                .timestamp(LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        log.error(e.getMessage());
+        return ApiError.builder()
+                //Arrays.asList(e.getStackTrace())
+                .errors(null)
+                .message(e.getMessage())
+                .reason(e.getMessage())
+                .status(HttpStatus.BAD_REQUEST)
                 .timestamp(LocalDateTime.now()
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();

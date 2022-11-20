@@ -2,21 +2,18 @@ package ru.explorewithme.stats;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Service;
-import ru.explorewithme.hit.EndPointHit;
 import ru.explorewithme.hit.EndPointRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import ru.explorewithme.hit.QEndPointHit;
+import ru.explorewithme.hit.model.QEndPointHit;
+import ru.explorewithme.stats.model.GetStatRequest;
+import ru.explorewithme.stats.model.ViewStats;
 
-import javax.persistence.Entity;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 
 @Service
 public class StatService {
@@ -39,44 +36,25 @@ public class StatService {
                 .reduce(BooleanExpression::and)
                 .get();
 
-        //EntityManager em = EntityManagerFactory.createEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        NumberPath<Long> count = Expressions.numberPath(Long.class, "c");
+        //NumberPath<Long> count = Expressions.numberPath(Long.class, "c");
 
-        List<Tuple> test = queryFactory.select(
-            endPointHit.uri, endPointHit.id.count().as(count))
+        List<Tuple> tuple = queryFactory.select(
+            endPointHit.uri, endPointHit.id.count())
                 .from(endPointHit)
                 .where(finalCondition)
                 .groupBy(endPointHit.uri)
                 .fetch();
 
         List<ViewStats> stats = new ArrayList<>();
-        for (Tuple t : test) {
+        for (Tuple t : tuple) {
             ViewStats viewStats = new ViewStats(
                     "ewm-main-service",
                     t.get(endPointHit.uri),
-            t.get(endPointHit.id.count().as(count)));
+            t.get(endPointHit.id.count()));
             stats.add(viewStats);
 
         }
         return stats;
-        //Iterable<EndPointHit> endPoints = endPointRepository;
-
-
-        /*
-
-
-List<Tuple> userTitleCounts = queryFactory.select(
-  blogPost.title, blogPost.id.count().as(count))
-  .from(blogPost)
-  .groupBy(blogPost.title)
-  .orderBy(count.desc())
-  .fetch();
-
-
-
-        for(EndPointHit i : endPoints) {
-            ViewStats viewStats = new ViewStats(i.getApp(), i.getUri(), )
-        }*/
     }
 }

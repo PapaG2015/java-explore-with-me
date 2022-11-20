@@ -2,7 +2,6 @@ package ru.explorewithme.event;
 
 import ru.explorewithme.category.CategoryMapper;
 import ru.explorewithme.category.model.Category;
-import ru.explorewithme.event.model.EventState;
 import ru.explorewithme.user.model.User;
 import ru.explorewithme.user.UserMapper;
 import ru.explorewithme.event.dto.EventFullDto;
@@ -29,18 +28,17 @@ public class EventMapper {
                 .locationLon(newEventDto.getLocation().getLon())
                 .paid(newEventDto.getPaid())
                 .participantLimit(newEventDto.getParticipantLimit())
-                .state(EventState.PENDING)
                 .requestModeration(newEventDto.getRequestModeration())
                 .title(newEventDto.getTitle())
                 .build();
     }
 
-    public static EventFullDto toEventFullDto(Event event) {
+    public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Long hits) {
         return EventFullDto.builder()
                 .annotation(event.getAnnotation())
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
-                .confirmedRequests(0L)
-                .createdOn(event.getCreatedOn().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .confirmedRequests(confirmedRequests)
+                .createdOn(fromDateToString(event.getCreatedOn()))
                 .description(event.getDescription())
                 .eventDate(fromDateToString(event.getEventDate()))
                 .id(event.getId())
@@ -48,25 +46,25 @@ public class EventMapper {
                 .location(new Location(event.getLocationLat(), event.getLocationLon()))
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
-                .publishedOn(null)
+                .publishedOn(fromDateToString(LocalDateTime.now()))
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState().toString())
                 .title(event.getTitle())
-                .views(9L)
+                .views(hits)
                 .build();
     }
 
-    public static EventShortDto toEventShortDto(Event event) {
+    public static EventShortDto toEventShortDto(Event event, Long confirmedRequests) {
         return EventShortDto.builder()
                 .annotation(event.getAnnotation())
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
-                .confirmedRequests(0L)
-                .eventDate(event.getEventDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .confirmedRequests(confirmedRequests)
+                .eventDate(fromDateToString(event.getEventDate()))
                 .id(event.getId())
                 .initiator(UserMapper.toUserShortDto(event.getInitiator()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(9L)
+                .views(1000000L)
                 .build();
     }
 
@@ -85,18 +83,18 @@ public class EventMapper {
     public static List<EventShortDto> mapToEventShortDto(Iterable<Event> events) {
         List<EventShortDto> dtos = new ArrayList<>();
         for (Event event : events) {
-            dtos.add(toEventShortDto(event));
+            dtos.add(toEventShortDto(event, 4L));
         }
         return dtos;
     }
-
+/*
     public static List<EventFullDto> mapToEventFullDto(Iterable<Event> events) {
         List<EventFullDto> dtos = new ArrayList<>();
         for (Event event : events) {
             dtos.add(toEventFullDto(event));
         }
         return dtos;
-    }
+    }*/
 
     /*public static Event toEvent(Long eventId, AdminUpdateEventRequest updateEvent, Category category) {
         return Event.builder()
@@ -113,4 +111,15 @@ public class EventMapper {
                 .title(updateEvent.getTitle())
                 .build();
     }*/
+
+
+    public static List<Event> toList(Iterable<Event> ilist) {
+        List<Event> events = new ArrayList<>();
+
+        for (Event e : ilist) {
+            events.add(e);
+        }
+
+        return events;
+    }
 }

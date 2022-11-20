@@ -2,10 +2,12 @@ package ru.explorewithme.event.model;
 
 import lombok.*;
 import ru.explorewithme.category.model.Category;
+import ru.explorewithme.request.model.Request;
 import ru.explorewithme.user.model.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
 @Getter
@@ -32,7 +34,7 @@ public class Event {
     private Float locationLon;
     private Boolean paid;
     @Column(name = "participant_limit")
-    private Integer participantLimit;
+    private Long participantLimit;
     @Column(name = "request_moderation")
     private Boolean requestModeration;
     private String title;
@@ -44,6 +46,8 @@ public class Event {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private EventState state = EventState.PENDING;
+    @OneToMany(mappedBy = "event")
+    private List<Request> requests;
 
     public Event() {
     }
@@ -65,7 +69,8 @@ public class Event {
                 ", title='" + title + '\'' +
                 ", initiator=" + initiator +
                 ", publishedOn=" + publishedOn +
-                ", state='" + state + '\'' +
+                ", state=" + state +
+                ", requests=" + requests +
                 '}';
     }
 }
