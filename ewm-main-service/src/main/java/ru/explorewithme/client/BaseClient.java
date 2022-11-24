@@ -3,6 +3,7 @@ package ru.explorewithme.client;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -19,16 +20,23 @@ public class BaseClient {
         this.rest = rest;
     }
 
-    protected ResponseEntity<Object> get(String path) {
+    /*protected ResponseEntity<Object> get(String path) {
         return get(path, null, null);
     }
 
     protected ResponseEntity<Object> get(String path, long userId) {
         return get(path, userId, null);
-    }
+    }*/
 
-    protected ResponseEntity<Object> get(String path, Long userId, @Nullable Map<String, Object> parameters) {
-        return makeAndSendRequest(HttpMethod.GET, path, userId, parameters, null);
+    protected ResponseEntity<List<ViewStats>> get(String path, Long userId, @Nullable Map<String, Object> parameters) {
+        //return makeAndSendRequest(HttpMethod.GET, path, userId, parameters, null);
+        return rest.exchange(
+                path,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<ViewStats>>() {},
+                parameters
+        );
     }
 
     protected <T> ResponseEntity<Object> post(String path, T body) {

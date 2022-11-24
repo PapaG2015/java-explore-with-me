@@ -20,10 +20,12 @@ public enum EventState {
 
     public static Set<EventState> from(Set<String> states) {
         Set<EventState> eventStates = new HashSet<>();
-        for (String s : states) {
-            EventState state =
-                    EventState.from(s).orElseThrow(() -> new IllegalArgumentException("Unknown state: UNSUPPORTED_STATUS"));
-            eventStates.add(state);
+        if(states != null) {
+            for (String s : states) {
+                EventState state =
+                        EventState.from(s).orElseThrow(() -> new IllegalArgumentException("Unknown state: UNSUPPORTED_STATUS"));
+                eventStates.add(state);
+            }
         }
         return eventStates;
     }

@@ -8,10 +8,10 @@ import javax.validation.constraints.Positive;
 
 @Getter
 public class CategoryDto {
-    @Positive
+    @Positive(message = "id can't be blank")
     @NonNull
     private Long id;
-    @NotBlank
+    @NotBlank(message = "name can't be blank")
     private String name;
 
     public CategoryDto(Long id, String name) {

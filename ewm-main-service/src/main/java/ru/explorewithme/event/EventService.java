@@ -2,6 +2,7 @@ package ru.explorewithme.event;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class EventService {
+    private static final String API_PREFIX = "/events/";
     private EventRepository eventRepository;
     private UserRepository userRepository;
     private CategoryRepository categoryRepository;
@@ -47,18 +49,22 @@ public class EventService {
     private IdService idService;
     private StatGetClient statGetClient;
 
+    private String url;
+
     public EventService(EventRepository eventRepository,
                         UserRepository userRepository,
                         CategoryRepository categoryRepository,
                         IdService idService,
                         RequestRepository requestRepository,
-                        StatGetClient statGetClient) {
+                        StatGetClient statGetClient,
+                        @Value("${main-server.url}") String url) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.idService = idService;
         this.requestRepository = requestRepository;
         this.statGetClient = statGetClient;
+        this.url = url + API_PREFIX;
     }
 
     public EventFullDto addEvent(Long userId, NewEventDto newEventDto) {
@@ -68,14 +74,8 @@ public class EventService {
         Event event = EventMapper.toEvent(user, newEventDto, category);
         eventRepository.save(event);
 
-        //Получение статистики
-        List<String> uris = List.of("");
-        ViewStats response = (ViewStats)(statGetClient.getEndPoint(LocalDateTime.now().minusYears(1),
-                LocalDateTime.now().plusYears(1), uris).getBody());
-        Long hits = response.getHits();
-        //
         Long confirmRequest = requestRepository.countConfirmedRequests(event.getId());
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, hits);
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 0L);
         log.info("Added event: {}", eventFullDto);
         return eventFullDto;
     }
@@ -85,7 +85,14 @@ public class EventService {
         List<EventShortDto> events = eventRepository.findByInitiator_Id(userId, pageable)
                 .stream().map(event -> {
                     Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
-                    return EventMapper.toEventShortDto(event, confirmedRequests);
+                    //Получение статистики
+                    LocalDateTime start = LocalDateTime.now().minusYears(1);
+                    LocalDateTime end = LocalDateTime.now().plusYears(1);
+                    List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + event.getId()));
+                    log.info("Getted viewStats={}", viewStats);
+                    Long hits = viewStats.get(0).getHits();
+
+                    return EventMapper.toEventShortDto(event, confirmedRequests, hits);
                 }).collect(Collectors.toList());
         log.info("Getted events: {}", events);
         return events;
@@ -127,14 +134,29 @@ public class EventService {
 
         eventRepository.save(event);
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
-        return EventMapper.toEventFullDto(event, confirmRequest, 9L);
+
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + eventId));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        return EventMapper.toEventFullDto(event, confirmRequest, hits);
     }
 
     public EventFullDto getEvent(Long userId, Long eventId) {
         Event event = eventRepository.findByInitiator_IdAndId(userId, eventId);
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
 
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 9L);
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + eventId));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, hits);
         log.info("Getted event: {}", eventFullDto);
         return eventFullDto;
     }
@@ -146,7 +168,15 @@ public class EventService {
 
         event.setState(EventState.CANCELED);
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 9L);
+
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + eventId));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, hits);
         log.info("Canceled event: {}", eventFullDto);
         return eventFullDto;
     }
@@ -156,13 +186,14 @@ public class EventService {
         if (event.getState() != EventState.PENDING)
             throw new IdException("Event with id=" + eventId + "must have status PENGING");
 
-        if (event.getEventDate().isAfter(LocalDateTime.now().plusHours(1)))
+        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1)))
             throw new IdException("It's too late");
 
+        event.setPublishedOn(LocalDateTime.now());
         event.setState(EventState.PUBLISHED);
         eventRepository.save(event);
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 9L);
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 0L);
         log.info("Published event: {}", eventFullDto);
         return eventFullDto;
     }
@@ -175,7 +206,15 @@ public class EventService {
         event.setState(EventState.CANCELED);
         eventRepository.save(event);
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 9L);
+
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + eventId));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, hits);
         log.info("Rejected event: {}", eventFullDto);
         return eventFullDto;
     }
@@ -205,8 +244,9 @@ public class EventService {
         if (req.getSort() == "EVENT_DATE") {
             events = eventRepository.findAll(finalCondition, Sort.by(Sort.Direction.ASC, "eventDate"));
         } else {
-            events = null;
+            events = eventRepository.findAll(finalCondition);
         }
+        log.info("Getted public events={}", events);
 
         List<Event> eventList = EventMapper.toList(events);
 
@@ -218,9 +258,10 @@ public class EventService {
             }).collect(Collectors.toList());
         }
 
-        eventList.stream().skip(from).limit(size);
+        eventList = eventList.stream().skip(from).limit(size).collect(Collectors.toList());
 
-        List<EventShortDto> eventShortDtos = EventMapper.mapToEventShortDto(events);
+        log.info("Getted public eventList={}", eventList);
+        List<EventShortDto> eventShortDtos = EventMapper.mapToEventShortDto(eventList, requestRepository, statGetClient, url);
 
         return eventShortDtos;
     }
@@ -228,21 +269,35 @@ public class EventService {
     public List<EventFullDto> getAdminEvents(GetEventAdminRequest req, Integer from, Integer size) {
         QEvent event = QEvent.event;
         List<BooleanExpression> conditions = new ArrayList<>();
-        conditions.add(event.initiator.id.in(req.getUsers()));
-        conditions.add(event.state.in(req.getStates()));
-        conditions.add(event.category.id.in(req.getCategories()));
-        conditions.add(event.eventDate.between(req.getRangeStart(), req.getRangeEnd()));
+        log.info("req={}", req);
+        if (req.getUsers() != null & !req.getUsers().isEmpty()) conditions.add(event.initiator.id.in(req.getUsers()));
+        if (req.getStates() != null & !req.getStates().isEmpty()) conditions.add(event.state.in(req.getStates()));
+        if (req.getCategories() != null & !req.getCategories().isEmpty())
+            conditions.add(event.category.id.in(req.getCategories()));
+        if (req.getRangeStart() != null & req.getRangeEnd() != null)
+            conditions.add(event.eventDate.between(req.getRangeStart(), req.getRangeEnd()));
 
         BooleanExpression finalCondition = conditions.stream()
                 .reduce(BooleanExpression::and)
                 .get();
+        log.info("finalCondition={}", finalCondition);
 
         Pageable pageable = PageRequest.of(from / size, size);
         Iterable<Event> events = eventRepository.findAll(finalCondition, pageable);
         List<EventFullDto> dtos = new ArrayList<>();
+
         for (Event e : events) {
             Long confirmedRequests = requestRepository.countConfirmedRequests(e.getId());
-            dtos.add(EventMapper.toEventFullDto(e, confirmedRequests, 9L));
+
+            //Получение статистики
+            LocalDateTime start = LocalDateTime.now().minusYears(1);
+            LocalDateTime end = LocalDateTime.now().plusYears(1);
+            List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + e.getId()));
+            log.info("Getted viewStats={}", viewStats);
+            Long hits = viewStats.get(0).getHits();
+
+
+            dtos.add(EventMapper.toEventFullDto(e, confirmedRequests, hits));
         }
         log.info("Getted events by admin: {}", dtos);
         return dtos;
@@ -268,7 +323,14 @@ public class EventService {
 
         eventRepository.save(event);
         Long confirmedRequests = requestRepository.countConfirmedRequests(eventId);
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, 9L);
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + event.getId()));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmedRequests, hits);
         log.info("Putted event by admin: {}", eventFullDto);
         return eventFullDto;
     }
@@ -279,7 +341,14 @@ public class EventService {
             throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
 
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
-        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, 9L);
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(this.url + event.getId()));
+        log.info("Getted viewStats={}", viewStats);
+        Long hits = viewStats.get(0).getHits();
+
+        EventFullDto eventFullDto = EventMapper.toEventFullDto(event, confirmRequest, hits);
         log.info("Getted public event={}", eventFullDto);
         return eventFullDto;
     }
@@ -301,7 +370,8 @@ public class EventService {
         request.setStatus(RequestState.CONFIRMED);
         requestRepository.save(request);
 
-        if (idService.getRequestById(reqId).getStatus() == RequestState.CONFIRMED) {
+        //if (idService.getRequestById(reqId).getStatus() == RequestState.PENDING) {
+        if (requestRepository.countConfirmedRequests(eventId) == idService.getEventById(eventId).getParticipantLimit()) {
             List<Request> requests = requestRepository.countPendingRequests(eventId);
 
             requests.stream().forEach(req -> {

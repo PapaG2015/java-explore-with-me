@@ -32,15 +32,17 @@ public class EventAdminController {
     }
 
     @GetMapping
-    public List<EventFullDto> getAdminEvents(@RequestParam Set<Long> users,
-                                             @RequestParam Set<String> states,
-                                             @RequestParam Set<Long> categories,
-                                             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
+    public List<EventFullDto> getAdminEvents(@RequestParam(required = false) Set<Long> users,
+                                             @RequestParam(required = false) Set<String> states,
+                                             @RequestParam(required = false) Set<Long> categories,
+                                             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
+                                             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                              @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                              @Positive @RequestParam(defaultValue = "10") Integer size) {
+        log.info("Getting events by admin with users={}, states={}, categories={}, rangeStart={}, rangeEnd={}",
+                users, states, categories, rangeStart, rangeEnd);
         Set<EventState> eventStates = EventState.from(states);
-        log.info("Getting events by admin");
+
         return eventService.getAdminEvents(GetEventAdminRequest.of(users, eventStates, categories, rangeStart, rangeEnd), from, size);
     }
 

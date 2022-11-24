@@ -1,16 +1,19 @@
 package ru.explorewithme.compilation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.explorewithme.IdService;
+import ru.explorewithme.client.StatGetClient;
 import ru.explorewithme.compilation.dto.CompilationDto;
 import ru.explorewithme.compilation.dto.NewCompilationDto;
 import ru.explorewithme.compilation.model.Compilation;
 import ru.explorewithme.event.EventRepository;
 import ru.explorewithme.event.model.Event;
+import ru.explorewithme.request.RequestRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,17 +21,28 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class CompilationService {
+    private static final String API_PREFIX = "/events/";
     private CompilationRepository compilationRepository;
     private EventRepository eventRepository;
 
     private IdService idService;
 
+    private RequestRepository requestRepository;
+    private StatGetClient statGetClient;
+    private String url;
+
     public CompilationService(CompilationRepository compilationRepository,
                               EventRepository eventRepository,
-                              IdService idService) {
+                              IdService idService,
+                              RequestRepository requestRepository,
+                              StatGetClient statGetClient,
+                              @Value("${main-server.url}") String url) {
         this.compilationRepository = compilationRepository;
         this.eventRepository = eventRepository;
         this.idService = idService;
+        this.requestRepository = requestRepository;
+        this.statGetClient = statGetClient;
+        this.url = url + API_PREFIX;
     }
 
     public CompilationDto addCompilation(NewCompilationDto newCompilationDto) {
@@ -37,7 +51,7 @@ public class CompilationService {
         Compilation compilation = compilationRepository.save(
                 CompilationMapper.toCompilation(newCompilationDto, events));
 
-        CompilationDto compilationDto = CompilationMapper.toCompilationDto(compilation);
+        CompilationDto compilationDto = CompilationMapper.toCompilationDto(compilation, requestRepository, statGetClient, url);
         log.info("Added compilation: {}", compilationDto);
         return compilationDto;
     }
@@ -54,7 +68,12 @@ public class CompilationService {
         Pageable pageable = PageRequest.of(from / size, size);
         Page<Compilation> compilations = compilationRepository.findByPinned(pinned, pageable);
 
-        List<CompilationDto> compilationDtos = compilations.stream().map(CompilationMapper::toCompilationDto).collect(Collectors.toList());
+        List<CompilationDto> compilationDtos = compilations
+                .stream()
+                .map(compilation -> {
+                    return CompilationMapper.toCompilationDto(compilation, requestRepository, statGetClient, url);
+                })
+                .collect(Collectors.toList());
         log.info("Getting with pinned={}, from={}, size={} compilations:{}", pinned, from, size, compilationDtos);
         return compilationDtos;
     }
@@ -63,7 +82,7 @@ public class CompilationService {
         Compilation compilation = idService.getCompilationById(complId);
 
         log.info("Getted compilation: {}", compilation);
-        return CompilationMapper.toCompilationDto(compilation);
+        return CompilationMapper.toCompilationDto(compilation, requestRepository, statGetClient, url);
     }
 
     public void addEventToCompilation(Long complId, Long eventId) {

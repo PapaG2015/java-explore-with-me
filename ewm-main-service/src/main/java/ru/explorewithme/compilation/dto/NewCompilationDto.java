@@ -11,7 +11,7 @@ public class NewCompilationDto {
     private Set<Long> events;
     @Value("false")
     private Boolean pinned;
-    @NotBlank
+    @NotBlank(message = "title can't be blank")
     private String title;
 
     @Override

@@ -32,4 +32,15 @@ public class GetEventAdminRequest {
 
         return request;
     }
+
+    @Override
+    public String toString() {
+        return "GetEventAdminRequest{" +
+                "users=" + users +
+                ", states=" + states +
+                ", Categories=" + Categories +
+                ", rangeStart=" + rangeStart +
+                ", rangeEnd=" + rangeEnd +
+                '}';
+    }
 }

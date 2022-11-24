@@ -24,7 +24,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         return ApiError.builder()
-                .errors(Arrays.asList(e.getStackTrace()))
+                .errors(null)
                 .message(e.getMessage())
                 .reason(e.getBindingResult().getAllErrors().get(0).getDefaultMessage())
                 .status(HttpStatus.BAD_REQUEST)
@@ -78,13 +78,13 @@ public class ErrorHandler {
 
     //500
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handlePSQLExceptionException(PSQLException e) {
         return ApiError.builder()
-                .errors(Arrays.asList(e.getStackTrace()))
+                .errors(null)
                 .message(e.getMessage())
                 .reason(e.getMessage())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(HttpStatus.CONFLICT)
                 .timestamp(LocalDateTime.now()
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();
@@ -96,7 +96,7 @@ public class ErrorHandler {
     public ApiError handleIdException404(IdException e) {
         log.error(e.getMessage());
         return ApiError.builder()
-                .errors(Arrays.asList(e.getStackTrace()))
+                .errors(null)
                 .message(e.getMessage())
                 .reason(e.getMessage())
                 .status(HttpStatus.NOT_FOUND)

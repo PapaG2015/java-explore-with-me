@@ -2,12 +2,14 @@ package ru.explorewithme.event.dto;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import ru.explorewithme.category.dto.CategoryDto;
 import ru.explorewithme.user.dto.UserShortDto;
 import ru.explorewithme.event.model.Location;
 
 @Builder
 @Getter
+@Setter
 public class EventFullDto {
     private String annotation;
     private CategoryDto category;

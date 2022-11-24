@@ -1,7 +1,12 @@
 package ru.explorewithme.event;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import ru.explorewithme.category.CategoryMapper;
 import ru.explorewithme.category.model.Category;
+import ru.explorewithme.client.StatGetClient;
+import ru.explorewithme.client.ViewStats;
+import ru.explorewithme.request.RequestRepository;
 import ru.explorewithme.user.model.User;
 import ru.explorewithme.user.UserMapper;
 import ru.explorewithme.event.dto.EventFullDto;
@@ -16,6 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EventMapper {
+    //@Autowired
+    //private static RequestRepository requestRepository;
+    //@Autowired
+    //private static StatGetClient statGetClient;
+    //private static final String API_PREFIX = "/events/";
+    //@Value("${main-server.url}")
+    //private static String url;
+
     public static Event toEvent(User user, NewEventDto newEventDto, Category category) {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
@@ -34,7 +47,7 @@ public class EventMapper {
     }
 
     public static EventFullDto toEventFullDto(Event event, Long confirmedRequests, Long hits) {
-        return EventFullDto.builder()
+        EventFullDto eventFullDto = EventFullDto.builder()
                 .annotation(event.getAnnotation())
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
                 .confirmedRequests(confirmedRequests)
@@ -46,15 +59,16 @@ public class EventMapper {
                 .location(new Location(event.getLocationLat(), event.getLocationLon()))
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
-                .publishedOn(fromDateToString(LocalDateTime.now()))
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState().toString())
                 .title(event.getTitle())
                 .views(hits)
                 .build();
+        if (event.getPublishedOn() != null) eventFullDto.setPublishedOn(fromDateToString(event.getPublishedOn()));
+        return eventFullDto;
     }
 
-    public static EventShortDto toEventShortDto(Event event, Long confirmedRequests) {
+    public static EventShortDto toEventShortDto(Event event, Long confirmedRequests, Long hits) {
         return EventShortDto.builder()
                 .annotation(event.getAnnotation())
                 .category(CategoryMapper.toCategoryDto(event.getCategory()))
@@ -64,7 +78,7 @@ public class EventMapper {
                 .initiator(UserMapper.toUserShortDto(event.getInitiator()))
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(1000000L)
+                .views(hits)
                 .build();
     }
 
@@ -80,10 +94,36 @@ public class EventMapper {
         return s;
     }
 
-    public static List<EventShortDto> mapToEventShortDto(Iterable<Event> events) {
+    public static List<EventShortDto> mapToEventShortDto(Iterable<Event> events,
+                                                         RequestRepository requestRepository,
+                                                         StatGetClient statGetClient,
+                                                         String url) {
         List<EventShortDto> dtos = new ArrayList<>();
         for (Event event : events) {
-            dtos.add(toEventShortDto(event, 4L));
+            Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
+            //Получение статистики
+            LocalDateTime start = LocalDateTime.now().minusYears(1);
+            LocalDateTime end = LocalDateTime.now().plusYears(1);
+            List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(url + event.getId()));
+            Long hits = viewStats.get(0).getHits();
+            dtos.add(toEventShortDto(event, confirmedRequests, hits));
+        }
+        return dtos;
+    }
+
+    public static List<EventShortDto> mapToEventShortDto(List<Event> events,
+                                                         RequestRepository requestRepository,
+                                                         StatGetClient statGetClient,
+                                                         String url) {
+        List<EventShortDto> dtos = new ArrayList<>();
+        for (Event event : events) {
+            Long confirmedRequests = requestRepository.countConfirmedRequests(event.getId());
+            //Получение статистики
+            LocalDateTime start = LocalDateTime.now().minusYears(1);
+            LocalDateTime end = LocalDateTime.now().plusYears(1);
+            List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(url + event.getId()));
+            Long hits = viewStats.get(0).getHits();
+            dtos.add(toEventShortDto(event, confirmedRequests, hits));
         }
         return dtos;
     }

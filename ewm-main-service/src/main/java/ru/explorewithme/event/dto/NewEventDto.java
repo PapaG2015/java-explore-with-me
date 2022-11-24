@@ -5,17 +5,21 @@ import lombok.Getter;
 import org.hibernate.validator.constraints.Length;
 import ru.explorewithme.event.model.Location;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Getter
 public class NewEventDto {
+    @NotBlank(message = "annotation can't be blank")
     @Length(min = 20, max = 2000)
     private String annotation;
     @NotNull
     private Long category;
+    @NotBlank(message = "description can't be blank")
     @Length(min = 20, max = 7000)
     private String description;
+    @NotNull
     private LocalDateTime eventDate;
     @NotNull
     private Location location;
@@ -25,6 +29,7 @@ public class NewEventDto {
     private Long participantLimit = 0L;
     @Builder.Default
     private Boolean requestModeration = true;
+    @NotBlank(message = "title can't be blank")
     @Length(min = 3, max = 120)
     private String title;
 

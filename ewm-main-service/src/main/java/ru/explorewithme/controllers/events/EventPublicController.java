@@ -32,17 +32,31 @@ public class EventPublicController {
     }
 
     @GetMapping
-    public List<EventShortDto> getPublicEvents(@RequestParam String text,
-                                               @RequestParam HashSet<Long> categories,
-                                               @RequestParam Boolean paid,
-                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                               @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
+    public List<EventShortDto> getPublicEvents(@RequestParam(required = false) String text,
+                                               @RequestParam(required = false) HashSet<Long> categories,
+                                               @RequestParam(required = false) Boolean paid,
+                                               @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
+                                               @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                                @RequestParam(defaultValue = "false") Boolean onlyAvailable,
-                                               @RequestParam String sort,
+                                               @RequestParam(required = false) String sort,
                                                @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                               @Positive @RequestParam(defaultValue = "10") Integer size) {
-        if (sort != "EVENT_DATE" & sort != "VIEWS")
-            throw new IdException("Bad kind of sort");
+                                               @Positive @RequestParam(defaultValue = "10") Integer size,
+                                               HttpServletRequest request) {
+        //if (sort != "EVENT_DATE" & sort != "VIEWS")
+        //    throw new IdException("Bad kind of sort");
+        log.info("Getting public events with text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
+                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        log.info("Getted uri={}", request.getRequestURL() + "?" + request.getQueryString());
+
+        EndPoint endPoint = EndPoint
+                .builder()
+                .id(null)
+                .app("ewm-main-service")
+                .uri(request.getRequestURL() + "?" + request.getQueryString())
+                .ip(request.getRemoteAddr())
+                .timestamp(toStringFromDate(LocalDateTime.now()))
+                .build();
+        statPostClient.addEndPoint(0L, endPoint);
 
         return eventService.getPublicEvents(
                 GetEventPublicRequest.of(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort),
@@ -57,7 +71,7 @@ public class EventPublicController {
                 .builder()
                 .id(null)
                 .app("ewm-main-service")
-                .uri(request.getRequestURI())
+                .uri(request.getRequestURL().toString())
                 .ip(request.getRemoteAddr())
                 .timestamp(toStringFromDate(LocalDateTime.now()))
                 .build();
