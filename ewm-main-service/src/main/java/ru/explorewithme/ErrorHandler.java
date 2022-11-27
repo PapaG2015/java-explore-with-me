@@ -60,21 +60,6 @@ public class ErrorHandler {
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();
     }
-    /*
-    ////403
-    //404
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handleNotFoundException() {
-        return new ApiError();
-    }
-
-    //409
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handleConflictException() {
-        return new ApiError();
-    }*/
 
     //500
     @ExceptionHandler

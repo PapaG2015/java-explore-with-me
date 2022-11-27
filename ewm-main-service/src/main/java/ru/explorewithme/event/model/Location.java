@@ -6,8 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class Location {
-    private Float lat;
-    private Float lon;
+    private float lat;
+    private float lon;
 
     @Override
     public String toString() {

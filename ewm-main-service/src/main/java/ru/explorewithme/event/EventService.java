@@ -14,6 +14,8 @@ import ru.explorewithme.client.ViewStats;
 import ru.explorewithme.controllers.admin.events.dto.AdminUpdateEventRequest;
 import ru.explorewithme.controllers.admin.events.dto.GetEventAdminRequest;
 import ru.explorewithme.category.model.Category;
+import ru.explorewithme.controllers.events.StatPostClient;
+import ru.explorewithme.controllers.events.model.EndPoint;
 import ru.explorewithme.event.dto.EventFullDto;
 import ru.explorewithme.event.dto.EventShortDto;
 import ru.explorewithme.event.dto.NewEventDto;
@@ -33,7 +35,9 @@ import ru.explorewithme.request.RequestMapper;
 import ru.explorewithme.request.RequestRepository;
 
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,6 +52,7 @@ public class EventService {
     private RequestRepository requestRepository;
     private IdService idService;
     private StatGetClient statGetClient;
+    private StatPostClient statPostClient;
 
     private String url;
 
@@ -57,7 +62,8 @@ public class EventService {
                         IdService idService,
                         RequestRepository requestRepository,
                         StatGetClient statGetClient,
-                        @Value("${main-server.url}") String url) {
+                        @Value("${main-server.url}") String url,
+                        StatPostClient statPostClient) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
@@ -65,6 +71,7 @@ public class EventService {
         this.requestRepository = requestRepository;
         this.statGetClient = statGetClient;
         this.url = url + API_PREFIX;
+        this.statPostClient = statPostClient;
     }
 
     public EventFullDto addEvent(Long userId, NewEventDto newEventDto) {
@@ -221,9 +228,19 @@ public class EventService {
 
     public List<EventShortDto> getPublicEvents(GetEventPublicRequest req,
                                                Integer from,
-                                               Integer size) {
+                                               Integer size,
+                                               HttpServletRequest httpRequest) {
 
-        //QEvent event = QEvent.event;
+        EndPoint endPoint = EndPoint
+         .builder()
+         .id(null)
+         .app("ewm-main-service")
+         .uri(httpRequest.getRequestURL() + "?" + httpRequest.getQueryString())
+         .ip(httpRequest.getRemoteAddr())
+         .timestamp(toStringFromDate(LocalDateTime.now()))
+         .build();
+         statPostClient.addEndPoint(0L, endPoint);
+
         QEvent event = QEvent.event;
 
         List<BooleanExpression> conditions = new ArrayList<>();
@@ -335,7 +352,18 @@ public class EventService {
         return eventFullDto;
     }
 
-    public EventFullDto getPublicEvent(Long eventId) {
+    public EventFullDto getPublicEvent(Long eventId, HttpServletRequest request) {
+
+        EndPoint endPoint = EndPoint
+                .builder()
+                .id(null)
+                .app("ewm-main-service")
+                .uri(request.getRequestURL().toString())
+                .ip(request.getRemoteAddr())
+                .timestamp(toStringFromDate(LocalDateTime.now()))
+                .build();
+        statPostClient.addEndPoint(0L, endPoint);
+
         Event event = idService.getEventById(eventId);
         if (event.getState() != EventState.PUBLISHED)
             throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
@@ -390,5 +418,11 @@ public class EventService {
         requestRepository.save(request);
         ParticipationRequestDto participationRequestDto = RequestMapper.toParticipationRequestDto(request);
         return participationRequestDto;
+    }
+
+    String toStringFromDate(LocalDateTime date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String s = date.format(formatter);
+        return s;
     }
 }

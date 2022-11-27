@@ -1,7 +1,5 @@
 package ru.explorewithme.event;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import ru.explorewithme.category.CategoryMapper;
 import ru.explorewithme.category.model.Category;
 import ru.explorewithme.client.StatGetClient;
@@ -21,13 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EventMapper {
-    //@Autowired
-    //private static RequestRepository requestRepository;
-    //@Autowired
-    //private static StatGetClient statGetClient;
-    //private static final String API_PREFIX = "/events/";
-    //@Value("${main-server.url}")
-    //private static String url;
 
     public static Event toEvent(User user, NewEventDto newEventDto, Category category) {
         return Event.builder()

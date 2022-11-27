@@ -49,7 +49,7 @@ public class UserService {
             log.info("Getted users: {}", users);
             return users;
         } else {
-            List<UserDto> users = userRepository.getUsersAtIds(ids)
+            List<UserDto> users = userRepository.findAllById(ids)
                     .stream().map(UserMapper::toUserDto).collect(Collectors.toList());
             log.info("Getted users: {}", users);
             return users;

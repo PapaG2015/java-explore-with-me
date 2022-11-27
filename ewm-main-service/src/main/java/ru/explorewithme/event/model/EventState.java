@@ -23,7 +23,7 @@ public enum EventState {
         if(states != null) {
             for (String s : states) {
                 EventState state =
-                        EventState.from(s).orElseThrow(() -> new IllegalArgumentException("Unknown state: UNSUPPORTED_STATUS"));
+                        EventState.from(s).orElseThrow(() -> new IllegalArgumentException("Unknown state: " + s));
                 eventStates.add(state);
             }
         }

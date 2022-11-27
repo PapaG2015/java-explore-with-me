@@ -42,42 +42,20 @@ public class EventPublicController {
                                                @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                                @Positive @RequestParam(defaultValue = "10") Integer size,
                                                HttpServletRequest request) {
-        //if (sort != "EVENT_DATE" & sort != "VIEWS")
-        //    throw new IdException("Bad kind of sort");
         log.info("Getting public events with text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
         log.info("Getted uri={}", request.getRequestURL() + "?" + request.getQueryString());
 
-        EndPoint endPoint = EndPoint
-                .builder()
-                .id(null)
-                .app("ewm-main-service")
-                .uri(request.getRequestURL() + "?" + request.getQueryString())
-                .ip(request.getRemoteAddr())
-                .timestamp(toStringFromDate(LocalDateTime.now()))
-                .build();
-        statPostClient.addEndPoint(0L, endPoint);
-
         return eventService.getPublicEvents(
                 GetEventPublicRequest.of(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort),
-                from, size);
+                from, size, request);
     }
 
     @GetMapping("/{eventId}")
     public EventFullDto getPublicEvent(@PathVariable Long eventId, HttpServletRequest request) {
         log.info("Getting public event with id={}", eventId);
 
-        EndPoint endPoint = EndPoint
-                .builder()
-                .id(null)
-                .app("ewm-main-service")
-                .uri(request.getRequestURL().toString())
-                .ip(request.getRemoteAddr())
-                .timestamp(toStringFromDate(LocalDateTime.now()))
-                .build();
-        statPostClient.addEndPoint(0L, endPoint);
-
-        return eventService.getPublicEvent(eventId);
+        return eventService.getPublicEvent(eventId, request);
     }
 
     String toStringFromDate(LocalDateTime date) {

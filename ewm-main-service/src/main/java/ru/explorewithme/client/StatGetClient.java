@@ -1,42 +1,26 @@
 package ru.explorewithme.client;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.description.method.MethodDescription;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.util.DefaultUriBuilderFactory;
-import ru.explorewithme.controllers.events.model.EndPoint;
-
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service
 @Slf4j
 public class StatGetClient extends BaseClient {
     private static final String API_PREFIX = "/stats";
 
-    @Autowired
-    //shareit-server.url=http://localhost:9090
-    public StatGetClient(@Value("${stat-server.url}") String serverUrl, RestTemplateBuilder builder) {
+    public StatGetClient(String serverUrl, RestTemplateBuilder builder) {
         super(
                 builder
-                        .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl + API_PREFIX))
+                        .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl))
                         .requestFactory(HttpComponentsClientHttpRequestFactory::new)
                         .build()
         );
@@ -55,8 +39,6 @@ public class StatGetClient extends BaseClient {
 
         List<ViewStats> viewStats = get("?start={start}&end={end}&uris={uris}&unique={unique}", 0L, parameters).getBody();
 
-        //Type viewStatsListType = new TypeToken<List<ViewStats>>() {}.getType();
-        //List<ViewStats> viewStats = g.fromJson(json, ArrayList.class);
         return viewStats;
     }
 
