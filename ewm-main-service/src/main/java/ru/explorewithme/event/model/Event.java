@@ -2,6 +2,7 @@ package ru.explorewithme.event.model;
 
 import lombok.*;
 import ru.explorewithme.category.model.Category;
+import ru.explorewithme.comment.model.Comment;
 import ru.explorewithme.request.model.Request;
 import ru.explorewithme.user.model.User;
 
@@ -48,6 +49,8 @@ public class Event {
     private EventState state = EventState.PENDING;
     @OneToMany(mappedBy = "event")
     private List<Request> requests;
+    @OneToMany(mappedBy = "event")
+    private List<Comment> comments;
 
     public Event() {
     }

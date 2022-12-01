@@ -62,7 +62,6 @@ public class EventService {
                         IdService idService,
                         RequestRepository requestRepository,
                         StatGetClient statGetClient,
-                        @Value("${main-server.url}") String url,
                         StatPostClient statPostClient) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -70,7 +69,7 @@ public class EventService {
         this.idService = idService;
         this.requestRepository = requestRepository;
         this.statGetClient = statGetClient;
-        this.url = url + API_PREFIX;
+        this.url = API_PREFIX;
         this.statPostClient = statPostClient;
     }
 
@@ -235,19 +234,21 @@ public class EventService {
          .builder()
          .id(null)
          .app("ewm-main-service")
-         .uri(httpRequest.getRequestURL() + "?" + httpRequest.getQueryString())
          .ip(httpRequest.getRemoteAddr())
          .timestamp(toStringFromDate(LocalDateTime.now()))
          .build();
+        if (httpRequest.getQueryString() == null) endPoint.setUri(httpRequest.getRequestURI());
+        else endPoint.setUri(httpRequest.getRequestURI() + "?" + httpRequest.getQueryString());
+
          statPostClient.addEndPoint(0L, endPoint);
 
         QEvent event = QEvent.event;
 
         List<BooleanExpression> conditions = new ArrayList<>();
-        conditions.add(event.description.containsIgnoreCase(req.getText())
+        if (req.getText() != null) conditions.add(event.description.containsIgnoreCase(req.getText())
                 .or(event.annotation.containsIgnoreCase(req.getText())));
-        conditions.add(event.category.id.in(req.getCategories()));
-        conditions.add(event.paid.eq(req.getPaid()));
+        if (req.getCategories() != null) conditions.add(event.category.id.in(req.getCategories()));
+        if (req.getPaid() != null) conditions.add(event.paid.eq(req.getPaid()));
         if (req.getRangeStart() == null || req.getRangeEnd() == null) {
             conditions.add(event.eventDate.after(LocalDateTime.now()));
         } else conditions.add(event.eventDate.between(req.getRangeStart(), req.getRangeEnd()));
@@ -358,7 +359,7 @@ public class EventService {
                 .builder()
                 .id(null)
                 .app("ewm-main-service")
-                .uri(request.getRequestURL().toString())
+                .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
                 .timestamp(toStringFromDate(LocalDateTime.now()))
                 .build();

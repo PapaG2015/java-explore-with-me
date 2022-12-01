@@ -2,6 +2,8 @@ package ru.explorewithme;
 
 import org.springframework.stereotype.Service;
 import ru.explorewithme.category.CategoryRepository;
+import ru.explorewithme.comment.CommentRepository;
+import ru.explorewithme.comment.model.Comment;
 import ru.explorewithme.compilation.CompilationRepository;
 import ru.explorewithme.category.model.Category;
 import ru.explorewithme.compilation.model.Compilation;
@@ -24,16 +26,20 @@ public class IdService {
 
     private CompilationRepository compilationRepository;
 
+    private CommentRepository commentRepository;
+
     public IdService(UserRepository userRepository,
                      EventRepository eventRepository,
                      CategoryRepository categoryRepository,
                      CompilationRepository compilationRepository,
-                     RequestRepository requestRepository) {
+                     RequestRepository requestRepository,
+                     CommentRepository commentRepository) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.categoryRepository = categoryRepository;
         this.compilationRepository = compilationRepository;
         this.requestRepository = requestRepository;
+        this.commentRepository = commentRepository;
     }
 
     public Event getEventById(Long eventId) {
@@ -54,5 +60,9 @@ public class IdService {
 
     public Request getRequestById(Long reqId) {
         return requestRepository.findById(reqId).orElseThrow(() -> new IdException("no request with such id=" + reqId));
+    }
+
+    public Comment getCommentById(Long comId) {
+        return commentRepository.findById(comId).orElseThrow(() -> new IdException("no comment with such id=" + comId));
     }
 }
