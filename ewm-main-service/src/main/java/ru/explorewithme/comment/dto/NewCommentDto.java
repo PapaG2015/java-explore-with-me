@@ -8,4 +8,11 @@ import javax.validation.constraints.NotBlank;
 public class NewCommentDto {
     @NotBlank
     private String comment;
+
+    @Override
+    public String toString() {
+        return "NewCommentDto{" +
+                "comment='" + comment + '\'' +
+                '}';
+    }
 }

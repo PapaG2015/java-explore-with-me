@@ -14,4 +14,5 @@ PATCH /users/{userId}/events/{eventId}/comments
 DELETE /users/{userId}/events/{eventId}/comment/{comId}
 4) получение всех комментариев пользователя
 GET /users/{userId}/comments
-    
+5) получение всех комментариев события
+GET /users/{userId}//events/{eventId}/comments

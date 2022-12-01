@@ -1,7 +1,6 @@
 package ru.explorewithme.comment.model;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import ru.explorewithme.event.model.Event;
 import ru.explorewithme.user.model.User;
 
@@ -12,6 +11,9 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Table(name = "comments", schema = "public")
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,4 +26,17 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user; //тот, кто комментирует
+
+    @Override
+    public String toString() {
+        return "Comment{" +
+                "id=" + id +
+                ", comment='" + comment + '\'' +
+                ", dateOfPublic=" + dateOfPublic +
+                ", event=" + event +
+                ", user=" + user +
+                '}';
+    }
+
+
 }
