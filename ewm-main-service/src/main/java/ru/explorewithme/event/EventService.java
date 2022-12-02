@@ -259,11 +259,11 @@ public class EventService {
                 .get();
 
         Iterable<Event> events;
-        if (req.getSort() == "EVENT_DATE") {
-            events = eventRepository.findAll(finalCondition, Sort.by(Sort.Direction.ASC, "eventDate"));
-        } else {
-            events = eventRepository.findAll(finalCondition);
-        }
+        log.info("sort={}", req.getSort());
+        if (req.getSort() != null && req.getSort().equals("EVENT_DATE"))
+            events = eventRepository.findAll(finalCondition, Sort.by("eventDate").ascending());
+        else events = eventRepository.findAll(finalCondition);
+
         log.info("Getted public events={}", events);
 
         List<Event> eventList = EventMapper.toList(events);
@@ -280,6 +280,13 @@ public class EventService {
 
         log.info("Getted public eventList={}", eventList);
         List<EventShortDto> eventShortDtos = EventMapper.mapToEventShortDto(eventList, requestRepository, statGetClient, url);
+
+        if (req.getSort() != null && req.getSort().equals("VIEWS")) {
+            eventShortDtos.sort((e1, e2) -> {
+                if (e1.getViews() - e2.getViews() <= 0) return -1;
+                else return 1;
+            });
+        }
 
         return eventShortDtos;
     }

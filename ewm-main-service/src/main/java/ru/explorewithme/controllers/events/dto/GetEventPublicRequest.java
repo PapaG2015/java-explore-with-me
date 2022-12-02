@@ -37,4 +37,17 @@ public class GetEventPublicRequest {
 
         return request;
     }
+
+    @Override
+    public String toString() {
+        return "GetEventPublicRequest{" +
+                "text='" + text + '\'' +
+                ", categories=" + categories +
+                ", paid=" + paid +
+                ", rangeStart=" + rangeStart +
+                ", rangeEnd=" + rangeEnd +
+                ", onlyAvailable=" + onlyAvailable +
+                ", sort='" + sort + '\'' +
+                '}';
+    }
 }
