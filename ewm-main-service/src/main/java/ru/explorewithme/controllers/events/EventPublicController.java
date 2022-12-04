@@ -35,20 +35,21 @@ public class EventPublicController {
     public List<EventShortDto> getPublicEvents(@RequestParam(required = false) String text,
                                                @RequestParam(required = false) HashSet<Long> categories,
                                                @RequestParam(required = false) Boolean paid,
-                                               @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
-                                               @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
-                                               @RequestParam(defaultValue = "false") Boolean onlyAvailable,
+                                               @RequestParam(required = false) LocalDateTime rangeStart,
+                                               @RequestParam(required = false) LocalDateTime rangeEnd,
+                                               @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
                                                @RequestParam(required = false) String sort,
-                                               @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                               @Positive @RequestParam(defaultValue = "10") Integer size,
+                                               @PositiveOrZero @RequestParam(required = false, defaultValue = "0") Integer from,
+                                               @Positive @RequestParam(required = false, defaultValue = "10") Integer size,
                                                HttpServletRequest request) {
         log.info("Getting public events with text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
         log.info("Getted uri={}", request.getRequestURL() + "?" + request.getQueryString());
 
-        return eventService.getPublicEvents(
-                GetEventPublicRequest.of(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort),
-                from, size, request);
+        GetEventPublicRequest getEventPublicRequest = GetEventPublicRequest.of(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort);
+        log.info("getEventPublicRequest = {}", getEventPublicRequest);
+
+        return eventService.getPublicEvents(getEventPublicRequest, from, size, request);
     }
 
     @GetMapping("/{eventId}")

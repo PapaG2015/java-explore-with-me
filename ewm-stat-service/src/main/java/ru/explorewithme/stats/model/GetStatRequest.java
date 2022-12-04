@@ -27,4 +27,14 @@ public class GetStatRequest {
         request.setUnique(unique);
         return request;
     }
+
+    @Override
+    public String toString() {
+        return "GetStatRequest{" +
+                "start=" + start +
+                ", end=" + end +
+                ", uris=" + uris +
+                ", unique=" + unique +
+                '}';
+    }
 }

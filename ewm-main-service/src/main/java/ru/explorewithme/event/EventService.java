@@ -62,7 +62,6 @@ public class EventService {
                         IdService idService,
                         RequestRepository requestRepository,
                         StatGetClient statGetClient,
-                        @Value("${main-server.url}") String url,
                         StatPostClient statPostClient) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -70,7 +69,7 @@ public class EventService {
         this.idService = idService;
         this.requestRepository = requestRepository;
         this.statGetClient = statGetClient;
-        this.url = url + API_PREFIX;
+        this.url = API_PREFIX;
         this.statPostClient = statPostClient;
     }
 
@@ -235,19 +234,21 @@ public class EventService {
          .builder()
          .id(null)
          .app("ewm-main-service")
-         .uri(httpRequest.getRequestURL() + "?" + httpRequest.getQueryString())
          .ip(httpRequest.getRemoteAddr())
          .timestamp(toStringFromDate(LocalDateTime.now()))
          .build();
+        if (httpRequest.getQueryString() == null) endPoint.setUri(httpRequest.getRequestURI());
+        else endPoint.setUri(httpRequest.getRequestURI() + "?" + httpRequest.getQueryString());
+
          statPostClient.addEndPoint(0L, endPoint);
 
         QEvent event = QEvent.event;
 
         List<BooleanExpression> conditions = new ArrayList<>();
-        conditions.add(event.description.containsIgnoreCase(req.getText())
+        if (req.getText() != null) conditions.add(event.description.containsIgnoreCase(req.getText())
                 .or(event.annotation.containsIgnoreCase(req.getText())));
-        conditions.add(event.category.id.in(req.getCategories()));
-        conditions.add(event.paid.eq(req.getPaid()));
+        if (req.getCategories() != null) conditions.add(event.category.id.in(req.getCategories()));
+        if (req.getPaid() != null) conditions.add(event.paid.eq(req.getPaid()));
         if (req.getRangeStart() == null || req.getRangeEnd() == null) {
             conditions.add(event.eventDate.after(LocalDateTime.now()));
         } else conditions.add(event.eventDate.between(req.getRangeStart(), req.getRangeEnd()));
@@ -258,11 +259,11 @@ public class EventService {
                 .get();
 
         Iterable<Event> events;
-        if (req.getSort() == "EVENT_DATE") {
-            events = eventRepository.findAll(finalCondition, Sort.by(Sort.Direction.ASC, "eventDate"));
-        } else {
-            events = eventRepository.findAll(finalCondition);
-        }
+        log.info("sort={}", req.getSort());
+        if (req.getSort() != null && req.getSort().equals("EVENT_DATE"))
+            events = eventRepository.findAll(finalCondition, Sort.by("eventDate").ascending());
+        else events = eventRepository.findAll(finalCondition);
+
         log.info("Getted public events={}", events);
 
         List<Event> eventList = EventMapper.toList(events);
@@ -279,6 +280,13 @@ public class EventService {
 
         log.info("Getted public eventList={}", eventList);
         List<EventShortDto> eventShortDtos = EventMapper.mapToEventShortDto(eventList, requestRepository, statGetClient, url);
+
+        if (req.getSort() != null && req.getSort().equals("VIEWS")) {
+            eventShortDtos.sort((e1, e2) -> {
+                if (e1.getViews() - e2.getViews() <= 0) return -1;
+                else return 1;
+            });
+        }
 
         return eventShortDtos;
     }
@@ -354,19 +362,19 @@ public class EventService {
 
     public EventFullDto getPublicEvent(Long eventId, HttpServletRequest request) {
 
+        Event event = idService.getEventById(eventId);
+        if (event.getState() != EventState.PUBLISHED)
+            throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
+
         EndPoint endPoint = EndPoint
                 .builder()
                 .id(null)
                 .app("ewm-main-service")
-                .uri(request.getRequestURL().toString())
+                .uri(request.getRequestURI())
                 .ip(request.getRemoteAddr())
                 .timestamp(toStringFromDate(LocalDateTime.now()))
                 .build();
         statPostClient.addEndPoint(0L, endPoint);
-
-        Event event = idService.getEventById(eventId);
-        if (event.getState() != EventState.PUBLISHED)
-            throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
 
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
         //Получение статистики

@@ -1,5 +1,5 @@
 package ru.explorewithme.compilation;
-;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,7 +20,9 @@ import ru.explorewithme.request.RequestRepository;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +40,8 @@ public class CompilationService {
 
     private final StatGetClient statGetClient;
 
-    @Value("${main-server.url}" + API_PREFIX)
+    //@Value("${main-server.url}" + API_PREFIX)
+    @Value(API_PREFIX)
     private String url;
 
     public CompilationDto addCompilation(NewCompilationDto newCompilationDto) {
@@ -112,14 +115,39 @@ public class CompilationService {
     }
 
     private List<EventShortDto> getShortEventByComp(Compilation compilation) {
-        return compilation.getEvents().stream().map(event -> {
-            Long confirmedRequest = requestRepository.countConfirmedRequests(event.getId());
-            //Получение статистики
-            LocalDateTime start = LocalDateTime.now().minusYears(1);
-            LocalDateTime end = LocalDateTime.now().plusYears(1);
-            List<ViewStats> viewStats = statGetClient.getEndPoint(start, end, List.of(url + event.getId()));
-            Long hits = viewStats.get(0).getHits();
-            return EventMapper.toEventShortDto(event, confirmedRequest, hits);
-        }).collect(Collectors.toList());
+        List<Event> events = compilation.getEvents();
+        List<Long> eventIds = events
+                .stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+        List<String> urls = eventIds
+                .stream()
+                .map(id -> url + id)
+                .collect(Collectors.toList());
+
+        Map<Long, Long> confirmedRequests = requestRepository.countConfirmedRequests(eventIds);
+        log.info("confirmedRequests={}", confirmedRequests);
+
+        //Получение статистики
+        LocalDateTime start = LocalDateTime.now().minusYears(1);
+        LocalDateTime end = LocalDateTime.now().plusYears(1);
+        List<ViewStats> viewStatsList = statGetClient.getEndPoint(start, end, urls);
+
+        List<EventShortDto> shortEvents = new ArrayList<>();
+        for (Event e: events) {
+            Long hits = 0L;
+            for (ViewStats v : viewStatsList) {
+                if (v.getUri().equals(url + e.getId())) {
+                    hits = v.getHits();
+                    break;
+                }
+            }
+
+            if (confirmedRequests.get(e.getId()) == null)
+                shortEvents.add(EventMapper.toEventShortDto(e, 0L, hits));
+            else shortEvents.add(EventMapper.toEventShortDto(e, confirmedRequests.get(e.getId()), hits));
+        }
+
+        return shortEvents;
     }
 }

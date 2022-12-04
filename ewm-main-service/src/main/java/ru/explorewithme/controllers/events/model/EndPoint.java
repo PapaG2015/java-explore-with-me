@@ -3,6 +3,7 @@ package ru.explorewithme.controllers.events.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Getter
+@Setter
 public class EndPoint {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

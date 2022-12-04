@@ -2,6 +2,8 @@ package ru.explorewithme.stats;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,34 +36,55 @@ public class StatService {
         QEndPointHit endPointHit = QEndPointHit.endPointHit;
         List<BooleanExpression> conditions = new ArrayList<>();
         conditions.add(endPointHit.timestamp.between(req.getStart(), req.getEnd()));
-        conditions.add(endPointHit.uri.in(req.getUris()));
+        log.info("{}", req);
+        if (req.getUris() != null) conditions.add(endPointHit.uri.in(req.getUris()));
 
         BooleanExpression finalCondition = conditions.stream()
                 .reduce(BooleanExpression::and)
                 .get();
 
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-        //NumberPath<Long> count = Expressions.numberPath(Long.class, "c");
 
-        List<Tuple> tuple = queryFactory.select(
-            endPointHit.uri, endPointHit.id.count())
-                .from(endPointHit)
-                .where(finalCondition)
-                .groupBy(endPointHit.uri)
-                .fetch();
+        NumberPath<Long> count = Expressions.numberPath(Long.class, "c");
+
+        List<Tuple> tuple;
+        if (!req.getUnique()) {
+            tuple = queryFactory.select(
+                            endPointHit.uri, endPointHit.ip.count().as(count))
+                    .from(endPointHit)
+                    .where(finalCondition)
+                    .groupBy(endPointHit.uri)
+                    .fetch();
+        } else {
+            tuple = queryFactory.select(
+                            endPointHit.uri, endPointHit.ip.countDistinct().as(count))
+                    .from(endPointHit)
+                    .where(finalCondition)
+                    .groupBy(endPointHit.uri)
+                    .fetch();
+        }
 
         List<ViewStats> stats = new ArrayList<>();
-        for (String s : req.getUris()) {
-            Long hits = 0L;
-            for (Tuple t : tuple) {
-                if (t.get(endPointHit.uri).equals(s)) {
-                    hits = t.get(endPointHit.id.count());
-                    break;
-                }
-            }
 
-            ViewStats viewStats = new ViewStats("ewm-main-service", s, hits);
-            stats.add(viewStats);
+        if (req.getUris() != null) {
+            for (String s : req.getUris()) {
+                Long hits = 0L;
+                for (Tuple t : tuple) {
+                    if (t.get(endPointHit.uri).equals(s)) {
+                        hits = t.get(count);
+                        break;
+                    }
+                }
+
+                ViewStats viewStats = new ViewStats("ewm-main-service", s, hits);
+                stats.add(viewStats);
+            }
+        } else {
+            for (Tuple t : tuple) {
+                Long hits = t.get(count);
+                ViewStats viewStats = new ViewStats("ewm-main-service", t.get(endPointHit.uri), hits);
+                stats.add(viewStats);
+            }
         }
 
         log.info("Stats:{}", stats);
