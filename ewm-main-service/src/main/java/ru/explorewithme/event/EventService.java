@@ -362,6 +362,10 @@ public class EventService {
 
     public EventFullDto getPublicEvent(Long eventId, HttpServletRequest request) {
 
+        Event event = idService.getEventById(eventId);
+        if (event.getState() != EventState.PUBLISHED)
+            throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
+
         EndPoint endPoint = EndPoint
                 .builder()
                 .id(null)
@@ -371,10 +375,6 @@ public class EventService {
                 .timestamp(toStringFromDate(LocalDateTime.now()))
                 .build();
         statPostClient.addEndPoint(0L, endPoint);
-
-        Event event = idService.getEventById(eventId);
-        if (event.getState() != EventState.PUBLISHED)
-            throw new IdException("State of event with id=" + eventId + " isn't PUBLISHED");
 
         Long confirmRequest = requestRepository.countConfirmedRequests(eventId);
         //Получение статистики
